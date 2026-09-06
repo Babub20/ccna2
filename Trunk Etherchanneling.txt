@@ -1,0 +1,272 @@
+1. a : c :: / 64
+2. ::/0 (IPv6 default route)
+3. fe80 :: a : 0 : 0 : f /64
+4. 2002 : 6500 : 0 : 3000 :: /64
+5. :: 1/128 (IPv6 Loopback)
+6. ff00 :: beef : a00a : aa0 : 0 : 0 /8
+7. 2001 : bd8 : 1 :: ab9 : c0a8 : 102 /64
+8. 1200 : 0 : 130f :: 9c0 : 876a : 100b /64
+9. 2041 : 1000 : 140F :: 875b : 1b /96
+10. 2001 : 4860 : 4860 :: 8888 /128 (Google IPv6 DNS)
+
+IPv6 Subnetting:
+
+Design the Accenture Network using face:cafe:fafa:fefe:: /64
+to 50 Office.
+
+Rivan Method : CAI
+ConvertM0: 50 Offices = 6 bits
+AddMo: /64 + /6 bits = /70
+IChambaMoPatter: 
+
+						8 4 2 1		8 4 2 1	
+1st Office:face:cafe:fafa:fefe:: /70		0 0 0 0		0 0 0 0
+2nd Office:face:cafe:fafa:fefe:0400:: /70
+3rd Office:face:cafe:fafa:fefe:0800:: /70
+4th Office:face:cafe:fafa:fefe:0c00:: /70
+5th Office:face:cafe:fafa:fefe:1000:: /70
+6th Office:face:cafe:fafa:fefe:1400:: /70
+7th Office:face:cafe:fafa:fefe:1800:: /70
+8th Office:face:cafe:fafa:fefe:1c00:: /70
+9th Office:face:cafe:fafa:fefe:2000:: /70
+10th Office:face:cafe:fafa:fefe:2400:: /70
+
+
+
+Ipasok mo (must be determine the HEXTET, HEX Digit, Increment)
+/70 = 5th HEXTET, 2nd HexD, 4i
+:0000:
+:0400:
+:0800:
+:0c00:
+:1000:
+:1400:
+:1800:
+:1c00:
+:2000:
+:2400:
+:2800:
+:2c00:
+
+Implementation:
+
+conf t
+ ipv6 unicast-routing
+  int lo1
+  ipv6 add face:cafe:fafa:fefe::1/70
+  int lo2
+  ipv6 add face:cafe:fafa:fefe:0400::1/70
+  int lo3
+  ipv6 add face:cafe:fafa:fefe:0800::1/70
+  int lo4
+  ipv6 add face:cafe:fafa:fefe:0c00::1/70
+  int lo5
+  ipv6 add face:cafe:fafa:fefe:1000::1/70
+  int lo6
+  ipv6 add face:cafe:fafa:fefe:1400::1/70
+ ! all the way to 50th Office
+end
+
+
+
+NATIVE VLAN = Vlan1
+
+!fake Death of Switch
+
+conf t
+ vlan 123
+ name BUDOL-VLAN
+ exit
+ do sh vlan br
+
+int range fa0/1-12
+switchport mode access
+switchport access vlan 1
+do sh vlan br
+
+
+no vlan
+
+
+The 802.1 Powers of Cisco Switches: 
+
+ 802.1q (Qupid) - Trunk Ports (Connect 
+
+ !Configure Trunk Ports CoreTass/CoreBaba (thru Console)
+ conf t
+  int range fa0/10-12
+  switchport trunk encap dot1q
+  switchport mode trunk
+  end
+
+
+ 802.1d (Darna) - Spanning-Tree Protocol (prevents loops)
+
+@CoreTAAS
+ sh spanning-tree vlan 1
+
+
+@CoreBABA
+ no spanning-tree vlan 1-100
+ spanning-tree vlan 1-100 !return to normal
+
+
+!Make CoreTAAS as Root Bridge
+
+@CoreTaas
+conf t
+ spanning-tree vlan 1-100 root primary
+
+@CoreBaba
+conf t
+ spanning-tree vlan 1-100 root secondary
+
+
+LINK AGGREGATION PROTOCOL (LACP) 
+	
+
+@C1
+conf t
+ !C1-C2
+ int range e1/2-3
+ switchport trunk encap dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1-100
+ !
+ channel-group 30 mode active
+ channel-protocol lacp
+
+ !C1-A1
+ int range e0/1-2
+ switchport trunk encap dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1-100
+ !
+ channel-group 10 mode active
+ channel-protocol lacp
+
+ !C1-A2
+ int range e0/0, e0/3
+ switchport trunk encap dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1-100
+ !
+ channel-group 20 mode active
+ channel-protocol lacp
+
+
+_____________________________________
+
+@C2
+conf t
+ !C2-C1
+ int range e1/2-3
+ switchport trunk encap dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1-100
+ !
+ channel-group 30 mode active
+ channel-protocol lacp
+
+ !C1-A1
+ int range e0/1-2
+ switchport trunk encap dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1-100
+ !
+ channel-group 15 mode active
+ channel-protocol lacp
+
+ !C2-A2
+ int range e0/0, e0/3
+ switchport trunk encap dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1-100
+ !
+ channel-group 25 mode active
+ channel-protocol lacp
+
+_____________________________________
+
+@A1
+conf t
+ !A1-C1
+ int range e0/1-2
+ switchport trunk encap dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1-100
+ !
+ channel-group 10 mode active
+ channel-protocol lacp
+
+ !A1-C2
+ int range e0/3, e1/0
+ switchport trunk encap dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1-100
+ !
+ channel-group 15 mode active
+ channel-protocol lacp
+
+_____________________________________
+
+@A2
+conf t
+ !A2-C1
+ int range e0/1-2
+ switchport trunk encap dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1-100
+ !
+ channel-group 20 mode active
+ channel-protocol lacp
+
+ !A2-C2
+ int range e0/0, e0/3
+ switchport trunk encap dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1-100
+ !
+ channel-group 25 mode active
+ channel-protocol lacp
+
+_____________________________________
+
+@C1
+conf t
+ !C1-C2
+ int range e0/1-2
+ switchport trunk encap dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1-100
+ !
+ channel-group !! mode active
+ channel-protocol lacp
+
+ !C1-D1
+ int range e0/0, e0/3
+ switchport trunk encap dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1-100
+ !
+ channel-group !! mode active
+ channel-protocol lacp
+
+ !C1-D2
+ int range e0/0, e0/3
+ switchport trunk encap dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 1-100
+ !
+ channel-group !! mode active
+ channel-protocol lacp
+
+
+
+
+
+
+
+
+
+
